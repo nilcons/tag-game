@@ -1,2 +1,2 @@
 # tag-game
-Simple tag game in Haskell
+Simple tag game written in Haskell with Gloss

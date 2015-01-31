@@ -22,6 +22,7 @@ data World
     , _wSize :: !(Float,Float)
     , _wFogo :: !Int
     , _wGrace :: !Float
+    , _wShowScores :: !Bool
     } deriving (Show)
 makeLenses ''World
 
@@ -35,26 +36,32 @@ graceT :: Float
 graceT = 2
 
 iniWorld :: World
-iniWorld = World [player0, player1, player2] def (iniSize & both %~ fromIntegral) 0 graceT
+iniWorld = World [player0, player1, player2] def (iniSize & both %~ fromIntegral) 0 graceT True
 
 player0 :: Player
 player0 = def & pColor .~ blue & pPos .~ (300,300) & pAng .~ degToRad 225
+              & pName .~ "Blue"
 
 player1 :: Player
 player1 = def & pColor .~ red & pPos .~ (-300,-300) & pAng .~ degToRad 45
+              & pName .~ "Red"
 
 player2 :: Player
 player2 = def & pColor .~ green & pPos .~ (300,-300) & pAng .~ degToRad 135
+              & pName .~ "Green"
 
 _player3 :: Player
 _player3 = def & pColor .~ yellow & pPos .~ (-300,300) & pAng .~ degToRad (-45)
+              & pName .~ "Yellow"
 
 drawWorld :: World -> Picture
-drawWorld World{..} = Pictures $ [ drawBorder _wSize] ++ map drawPlayer _wPlayers ++ [ fogo ]
+drawWorld World{..} = Pictures $ [ drawBorder _wSize] ++ scores
+                      ++ map drawPlayer _wPlayers ++ [ fogo ]
   where
     pos = _pPos $ _wPlayers !! _wFogo
     fogoColor = if _wGrace < 0 then light yellow else greyN 0.7
     fogo = translateP pos $ color fogoColor $ circleSolid 7
+    scores = if _wShowScores then _wPlayers & traversed %@~ drawScore _wSize else []
 
 drawBorder :: (Float,Float) -> Picture
 drawBorder (w,h) = color borderColor $ Pictures [ l, r, t, b ]
@@ -68,12 +75,16 @@ drawBorder (w,h) = color borderColor $ Pictures [ l, r, t, b ]
 
 
 eventHandler :: Event -> World -> World
-eventHandler ev = wKeys %~ handleKeys ev >>> updPlayers >>> saveSize
+eventHandler ev = wKeys %~ handleKeys ev >>> updPlayers >>> saveSize >>> toggleScore
   where
     updPlayers w@World{..} = w & wPlayers.traversed %@~ updateFromKeys _wKeys
     saveSize = case ev of
       EventResize sz -> wSize .~ (sz & both %~ fromIntegral)
       _ -> id
+    toggleScore = case ev of
+      EventKey (Char 't') Down _ _ -> wShowScores %~ not
+      _ -> id
+
 
 --  unsafePerformIO (print _ev) `seq` w
 
@@ -94,7 +105,7 @@ updateFogo w@World{..} = w & upd
     upd = if _wGrace < 0 then upd' else id
     upd' = case hits of
       [] -> id
-      ((n,_):_) -> wFogo .~ n >>> wGrace .~ graceT
+      ((n,_):_) -> wFogo .~ n >>> wGrace .~ graceT >>> wPlayers.ix n.pScore +~ 1
 
 
 main :: IO ()

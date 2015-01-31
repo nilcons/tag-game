@@ -23,11 +23,13 @@ data Player
     , _pRot :: !Float
     , _pColor :: !Color
     , _pAcc :: !Bool
+    , _pName :: !String
+    , _pScore :: !Int
     } deriving (Show)
 makeLenses ''Player
 
 instance Default Player where
-  def = Player (0,0) (0,0) 0 0 black False
+  def = Player (0,0) (0,0) 0 0 black False "" 0
 
 playerR :: Float
 playerR = 15
@@ -70,3 +72,14 @@ bounceOffBorder sz bw p@Player{..} = p & horiz & vert
     (x,y) = _pPos
     horiz = if x < -w || x > w then pSpd._1 *~ (-1) else id
     vert  = if y < -h || y > h then pSpd._2 *~ (-1) else id
+
+drawScore :: (Float,Float) -> Int -> Player -> Picture
+drawScore sz k Player{..} = translate x y $ color c $ Pictures [ name, score ]
+  where
+    (w,h) = sz & both %~ (/2)
+    x = w - 150
+    y = h - 50 - 30 * fromIntegral k
+    c = dark $ dim _pColor
+    sc = scale 0.18 0.18
+    name = sc $ Text _pName
+    score = translate 80 0 $ sc $ Text (show _pScore)

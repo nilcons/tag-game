@@ -11,6 +11,8 @@ import Graphics.Gloss
 import Graphics.Gloss.Geometry.Angle
 import Graphics.Gloss.Data.Vector
 import Graphics.Gloss.Interface.Pure.Game
+import System.Random
+import System.IO.Unsafe
 
 import Keys
 import Player
@@ -36,7 +38,9 @@ graceT :: Float
 graceT = 2
 
 iniWorld :: World
-iniWorld = World [player0, player1, player2] def (iniSize & both %~ fromIntegral) 0 graceT True
+iniWorld = World [player0, player1, player2] def (iniSize & both %~ fromIntegral) firstPlayer graceT True
+  where
+    firstPlayer = unsafePerformIO $ randomRIO (0,2)
 
 player0 :: Player
 player0 = def & pColor .~ blue & pPos .~ (300,300) & pAng .~ degToRad 225
@@ -93,7 +97,10 @@ stepFunction dt w@World{..}
   = w & wPlayers.traverse %~ stepPlayer dt
       & wPlayers.traverse %~ bounceOffBorder _wSize borderWidth
       & updateFogo
+      & updateScore
       & wGrace -~ dt
+  where
+    updateScore = if _wGrace < 0 then wPlayers.ix _wFogo.pScore +~ dt else id
 
 updateFogo :: World -> World
 updateFogo w@World{..} = w & upd
@@ -105,7 +112,7 @@ updateFogo w@World{..} = w & upd
     upd = if _wGrace < 0 then upd' else id
     upd' = case hits of
       [] -> id
-      ((n,_):_) -> wFogo .~ n >>> wGrace .~ graceT >>> wPlayers.ix n.pScore +~ 1
+      ((n,_):_) -> wFogo .~ n >>> wGrace .~ graceT -- >>> wPlayers.ix n.pScore +~ 1
 
 
 main :: IO ()

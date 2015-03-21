@@ -12,15 +12,15 @@ type KeySet = Set PKey
 
 playerKey :: Key -> Maybe PKey
 playerKey k = case k of
-  Char 'a' -> Just $ PKey 1 Bal
-  Char 's' -> Just $ PKey 1 Fel
+  Char 's' -> Just $ PKey 1 Bal
+  Char 'a' -> Just $ PKey 1 Fel
   Char 'd' -> Just $ PKey 1 Jobb
-  SpecialKey KeyDown -> Just $ PKey 0 Fel
   SpecialKey KeyLeft -> Just $ PKey 0 Bal
-  SpecialKey KeyRight -> Just $ PKey 0 Jobb
-  Char 'b' -> Just $ PKey 2 Bal
-  Char 'n' -> Just $ PKey 2 Fel
-  Char 'm' -> Just $ PKey 2 Jobb
+  SpecialKey KeyPageDown -> Just $ PKey 0 Fel
+  SpecialKey KeyDown -> Just $ PKey 0 Jobb
+  Char 'j' -> Just $ PKey 2 Bal
+  Char 'b' -> Just $ PKey 2 Fel
+  Char 'k' -> Just $ PKey 2 Jobb
   Char 'i' -> Just $ PKey 3 Bal
   Char 'o' -> Just $ PKey 3 Fel
   Char 'p' -> Just $ PKey 3 Jobb

@@ -24,7 +24,7 @@ data Player
     , _pColor :: !Color
     , _pAcc :: !Bool
     , _pName :: !String
-    , _pScore :: !Int
+    , _pScore :: !Float
     } deriving (Show)
 makeLenses ''Player
 
@@ -56,14 +56,14 @@ updateFromKeys keys pId = pRot .~ rot >>> pAcc .~ acc
       (True,False) -> 1
       (False,True) -> -1
       _ -> 0
-    acc = fel
+    acc = not fel
 
 stepPlayer :: Float -> Player -> Player
 stepPlayer dt p@Player{..} = p & pAng +~ dt*3*_pRot & pPos .~ pos' & pSpd .~ spd'
   where
     pos' = _pPos .+^ _pSpd
     spd' = _pSpd ^+^ acc
-    acc = if _pAcc then 0.01 *^ unitVectorAtAngle _pAng else (0,0)
+    acc = -0.01 *^ _pSpd ^+^ if _pAcc then 0.02 *^ unitVectorAtAngle _pAng else (0,0)
 
 bounceOffBorder :: (Float,Float) -> Float -> Player -> Player
 bounceOffBorder sz bw p@Player{..} = p & horiz & vert
@@ -77,9 +77,9 @@ drawScore :: (Float,Float) -> Int -> Player -> Picture
 drawScore sz k Player{..} = translate x y $ color c $ Pictures [ name, score ]
   where
     (w,h) = sz & both %~ (/2)
-    x = w - 150
+    x = w - 180
     y = h - 50 - 30 * fromIntegral k
     c = dark $ dim _pColor
     sc = scale 0.18 0.18
     name = sc $ Text _pName
-    score = translate 80 0 $ sc $ Text (show _pScore)
+    score = translate 80 0 $ sc $ Text (show $ floor _pScore)

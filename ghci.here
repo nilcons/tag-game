@@ -1,0 +1,5 @@
+#!/bin/sh
+cd $(dirname $(readlink -f $0))
+exec ghci -isrc -idist/build/autogen "$@"
+
+# (setq haskell-program-name "/home/klao/src/tag-game/ghci.here")

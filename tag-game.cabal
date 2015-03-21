@@ -30,4 +30,5 @@ executable tag-game
     data-default >=0.5 && <0.6,
     containers >=0.5 && <0.6,
     gloss >=1.9 && <1.10,
-    random
+    random,
+    transformers

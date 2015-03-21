@@ -44,7 +44,7 @@ drawPlayer Player{..} = translateP _pPos $ rotate (-radToDeg _pAng) $ -- scale 3
     flameP' = tail $ reverse $ tail $ map (second negate) flameP
     flame = if not _pAcc then id else (:) $ Color red $ polygon $ flameP ++ flameP'
 
-
+-- TODO(klao): factor out
 translateP :: Point -> Picture -> Picture
 translateP (x,y) = translate x y
 
@@ -70,8 +70,9 @@ bounceOffBorder sz bw p@Player{..} = p & horiz & vert
   where
     (w,h) = sz & both %~ (/2) & both -~ (bw + playerR)
     (x,y) = _pPos
-    horiz = if x < -w || x > w then pSpd._1 *~ (-1) else id
-    vert  = if y < -h || y > h then pSpd._2 *~ (-1) else id
+    (vx, vy) = _pSpd
+    horiz = if abs x > w && signum x == signum vx then pSpd._1 %~ negate else id
+    vert  = if abs y > h && signum y == signum vy then pSpd._2 %~ negate else id
 
 drawScore :: (Float,Float) -> Int -> Player -> Picture
 drawScore sz k Player{..} = translate x y $ color c $ Pictures [ name, score ]

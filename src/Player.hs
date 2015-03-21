@@ -7,6 +7,10 @@ import           Control.Arrow
 import           Control.Lens
 import           Data.AffineSpace
 import           Data.Default
+import           Data.Foldable (toList)
+import           Data.Monoid (mempty)
+import           Data.Sequence (Seq)
+import qualified Data.Sequence as Seq
 import qualified Data.Set as Set
 import           Data.VectorSpace
 import           Graphics.Gloss
@@ -14,6 +18,8 @@ import           Graphics.Gloss.Data.Vector
 import           Graphics.Gloss.Geometry.Angle
 
 import           Keys
+
+type Tail = Seq (Point,Point)
 
 data Player
   = Player
@@ -25,11 +31,12 @@ data Player
     , _pAcc :: !Bool
     , _pName :: !String
     , _pScore :: !Float
+    , _pTail :: !Tail
     } deriving (Show)
 makeLenses ''Player
 
 instance Default Player where
-  def = Player (0,0) (0,0) 0 0 black False "" 0
+  def = Player (0,0) (0,0) 0 0 black False "" 0 mempty
 
 playerR :: Float
 playerR = 15
@@ -43,6 +50,14 @@ drawPlayer Player{..} = translateP _pPos $ rotate (-radToDeg _pAng) $ -- scale 3
     flameP = [(-25,0), (-30,3), (-35,4), (-40,3), (-45,0)]
     flameP' = tail $ reverse $ tail $ map (second negate) flameP
     flame = if not _pAcc then id else (:) $ Color red $ polygon $ flameP ++ flameP'
+
+drawTail :: Player -> Picture
+drawTail Player{..} = Color col $ Pictures $ quads
+  where
+    col = light . light . light . dim . dim $ _pColor
+    ps  = toList _pTail
+    quads = zipWith f ps (tail ps)
+    f (ph1, pt1) (ph2, pt2) = Polygon [ph1, ph2, pt2, pt1]
 
 -- TODO(klao): factor out
 translateP :: Point -> Picture -> Picture
@@ -58,12 +73,20 @@ updateFromKeys keys pId = pRot .~ rot >>> pAcc .~ acc
       _ -> 0
     acc = not fel
 
+addToTail :: Point -> (Float, Float) -> Tail -> Tail
+addToTail p d t = Seq.take 400 $ (p',p'') <| t
+  where
+    p' = p .+^ 4 *^ d
+    p'' = p .-^ 4 *^ d
+
 stepPlayer :: Float -> Player -> Player
 stepPlayer dt p@Player{..} = p & pAng +~ dt*3*_pRot & pPos .~ pos' & pSpd .~ spd'
+                               & pTail %~ addToTail _pPos dir
   where
     pos' = _pPos .+^ _pSpd
     spd' = _pSpd ^+^ acc
-    acc = -0.01 *^ _pSpd ^+^ if _pAcc then 0.02 *^ unitVectorAtAngle _pAng else (0,0)
+    dir = unitVectorAtAngle _pAng
+    acc = -0.01 *^ _pSpd ^+^ (if _pAcc then 0.02 else 0) *^ dir
 
 bounceOffBorder :: (Float,Float) -> Float -> Player -> Player
 bounceOffBorder sz bw p@Player{..} = p & horiz & vert

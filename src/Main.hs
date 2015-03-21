@@ -30,6 +30,7 @@ data World
     , _wShowScores :: !Bool
     , _wRandom :: !StdGen
     , _wTarget :: !Target
+    , _wShowTails :: !Bool
     } deriving (Show)
 makeLenses ''World
 
@@ -46,7 +47,7 @@ iniWorld :: IO World
 iniWorld = do
   rnd <- newStdGen
   let world0 =
-        World [player0, player1, player2] def (iniSize & both %~ fromIntegral) (-1) 0 True rnd def
+        World [player0, player1, player2] def (iniSize & both %~ fromIntegral) (-1) 0 True rnd def False
   return $ placeTarget world0
 
 player0 :: Player
@@ -67,6 +68,7 @@ _player3 = def & pColor .~ yellow & pPos .~ (-300,300) & pAng .~ degToRad (-45)
 
 drawWorld :: World -> Picture
 drawWorld World{..} = Pictures $ [drawBorder _wSize] ++ scores
+                      ++ tails
                       ++ [drawTarget _wTarget] ++ map drawPlayer _wPlayers ++ [ fogo ]
   where
     pos = if _wFogo < 0
@@ -75,6 +77,7 @@ drawWorld World{..} = Pictures $ [drawBorder _wSize] ++ scores
     fogoColor = if _wGrace <= 0 then light yellow else greyN 0.7
     fogo = translateP pos $ color fogoColor $ circleSolid 7
     scores = if _wShowScores then _wPlayers & traversed %@~ drawScore _wSize else []
+    tails = if _wShowTails then map drawTail _wPlayers else []
 
 drawBorder :: (Float,Float) -> Picture
 drawBorder (w,h) = color borderColor $ Pictures [ l, r, t, b ]
@@ -88,14 +91,15 @@ drawBorder (w,h) = color borderColor $ Pictures [ l, r, t, b ]
 
 
 eventHandler :: Event -> World -> World
-eventHandler ev = wKeys %~ handleKeys ev >>> updPlayers >>> saveSize >>> toggleScore
+eventHandler ev = wKeys %~ handleKeys ev >>> updPlayers >>> saveSize >>> toggleShows
   where
     updPlayers w@World{..} = w & wPlayers.traversed %@~ updateFromKeys _wKeys
     saveSize = case ev of
       EventResize sz -> wSize .~ (sz & both %~ fromIntegral)
       _ -> id
-    toggleScore = case ev of
+    toggleShows = case ev of
       EventKey (Char 't') Down _ _ -> wShowScores %~ not
+      EventKey (Char 'y') Down _ _ -> wShowTails %~ not
       _ -> id
 
 stepFunction :: Float -> World -> World
